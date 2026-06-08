@@ -33,7 +33,9 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID
 async function getOrCreateAgentFolder(agentName) {
   const res = await drive.files.list({
     q: `'${MASTER_FOLDER_ID}' in parents and name='${agentName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: 'files(id, name)'
+    fields: 'files(id, name)',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true
   })
   if (res.data.files.length > 0) {
     return res.data.files[0].id
@@ -44,7 +46,8 @@ async function getOrCreateAgentFolder(agentName) {
       mimeType: 'application/vnd.google-apps.folder',
       parents: [MASTER_FOLDER_ID]
     },
-    fields: 'id'
+    fields: 'id',
+    supportsAllDrives: true
   })
   return folder.data.id
 }
@@ -60,7 +63,8 @@ async function uploadToDrive(filePath, fileName, folderId) {
       mimeType: 'audio/mpeg',
       body: fs.createReadStream(filePath)
     },
-    fields: 'id, webViewLink'
+    fields: 'id, webViewLink',
+    supportsAllDrives: true
   })
   return res.data
 }
