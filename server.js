@@ -35,7 +35,9 @@ async function getOrCreateAgentFolder(agentName) {
     q: `'${MASTER_FOLDER_ID}' in parents and name='${agentName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id, name)',
     supportsAllDrives: true,
-    includeItemsFromAllDrives: true
+    includeItemsFromAllDrives: true,
+    driveId: MASTER_FOLDER_ID,
+    corpora: 'drive'
   })
   if (res.data.files.length > 0) {
     return res.data.files[0].id
