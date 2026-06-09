@@ -47,14 +47,30 @@ async function getOrCreateAgentFolder(agentName) {
 }
 
 // ── Helper: upload audio file to Drive ──
+function getMimeType(ext) {
+  const map = {
+    mp3: 'audio/mpeg', mp2: 'audio/mpeg',
+    aac: 'audio/aac',
+    m4a: 'audio/mp4', mp4: 'audio/mp4', alac: 'audio/mp4',
+    ogg: 'audio/ogg', opus: 'audio/opus',
+    wma: 'audio/x-ms-wma', amr: 'audio/amr',
+    '3gp': 'audio/3gpp', wav: 'audio/wav',
+    flac: 'audio/flac', aiff: 'audio/aiff',
+    ape: 'audio/x-ape', gsm: 'audio/gsm',
+    vox: 'audio/vox', au: 'audio/basic'
+  }
+  return map[ext.toLowerCase()] || 'audio/octet-stream'
+}
+
 async function uploadToDrive(filePath, fileName, folderId) {
+  const ext = path.extname(fileName).slice(1)
   const res = await drive.files.create({
     requestBody: {
       name: fileName,
       parents: [folderId]
     },
     media: {
-      mimeType: 'audio/mpeg',
+      mimeType: getMimeType(ext),
       body: fs.createReadStream(filePath)
     },
     fields: 'id, webViewLink',
@@ -116,7 +132,8 @@ app.post('/upload-recording', upload.single('audio'), async (req, res) => {
     const timeStr = date.toLocaleTimeString('en-IN', {
       hour: '2-digit', minute: '2-digit', hour12: false
     }).replace(':', '')
-    const fileName = `${agentId}_${dateStr}_${timeStr}.mp3`
+    const originalExt = path.extname(tempFile.originalname || tempFile.filename || '').slice(1) || 'mp3'
+    const fileName = `${agentId}_${dateStr}_${timeStr}.${originalExt}`
 
     // 3. Upload to Drive
     const driveFile = await uploadToDrive(tempFile.path, fileName, agentFolderId)
