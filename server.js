@@ -163,6 +163,32 @@ app.post('/upload-recording', upload.single('audio'), async (req, res) => {
   }
 })
 
+app.get('/list-files', async (req, res) => {
+  const { agentId } = req.query
+  if (!agentId) return res.status(400).json({ error: 'Missing agentId' })
+  try {
+    const agentFolderId = await getOrCreateAgentFolder(agentId)
+    const names = []
+    let pageToken = undefined
+    do {
+      const result = await drive.files.list({
+        q: `'${agentFolderId}' in parents and trashed=false`,
+        fields: 'nextPageToken, files(name)',
+        pageSize: 1000,
+        pageToken,
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
+      })
+      result.data.files.forEach(f => names.push(f.name))
+      pageToken = result.data.nextPageToken
+    } while (pageToken)
+    res.json(names)
+  } catch (error) {
+    console.error('list-files error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`CallBridge server running on port ${PORT}`)
 })
