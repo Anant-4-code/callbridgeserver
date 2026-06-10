@@ -132,8 +132,10 @@ app.post('/upload-recording', upload.single('audio'), async (req, res) => {
     const timeStr = date.toLocaleTimeString('en-IN', {
       hour: '2-digit', minute: '2-digit', hour12: false
     }).replace(':', '')
-    const originalExt = path.extname(tempFile.originalname || tempFile.filename || '').slice(1) || 'mp3'
-    const fileName = `${agentId}_${dateStr}_${timeStr}.${originalExt}`
+    const originalName = req.body.fileName || tempFile.originalname || tempFile.filename || ''
+    const ext = path.extname(originalName) || '.m4a'
+    const baseName = path.basename(originalName, ext)
+    const fileName = originalName || `${agentId}_${dateStr}_${timeStr}${ext}`
 
     // 3. Upload to Drive
     const driveFile = await uploadToDrive(tempFile.path, fileName, agentFolderId)
