@@ -8,6 +8,19 @@ const path = require('path')
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// ── CORS: allow Chrome extension and AI chat sites ──
+app.use((req, res, next) => {
+  const origin = req.headers.origin || ''
+  const isAllowed = !origin ||
+    origin.startsWith('chrome-extension://') ||
+    ['https://claude.ai', 'https://chatgpt.com', 'https://gemini.google.com'].some(o => origin.startsWith(o))
+  res.setHeader('Access-Control-Allow-Origin', isAllowed ? (origin || '*') : '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
+
 // ── Multer: save uploaded audio temporarily ──
 const upload = multer({ dest: '/tmp/recordings/' })
 
