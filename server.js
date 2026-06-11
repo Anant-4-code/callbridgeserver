@@ -243,3 +243,27 @@ app.get('/latest-recording', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`CallBridge server running on port ${PORT}`)
 })
+
+// ── Proxy download: streams a Drive file to the browser (avoids CORS on direct Drive URLs) ──
+app.get('/download-file', async (req, res) => {
+  const { fileId } = req.query
+  if (!fileId) return res.status(400).json({ error: 'Missing fileId' })
+
+  try {
+    const meta = await drive.files.get({ fileId, fields: 'name,mimeType' })
+    const fileName = meta.data.name || 'recording.m4a'
+    const mimeType = meta.data.mimeType || 'audio/mp4'
+
+    const driveRes = await drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'stream' }
+    )
+
+    res.setHeader('Content-Type', mimeType)
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+    driveRes.data.pipe(res)
+  } catch (error) {
+    console.error('download-file error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
