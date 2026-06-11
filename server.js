@@ -189,6 +189,44 @@ app.get('/list-files', async (req, res) => {
   }
 })
 
+app.get('/latest-recording', async (req, res) => {
+  const { agentId } = req.query
+  if (!agentId) return res.status(400).json({ error: 'Missing agentId' })
+
+  try {
+    const agentFolderId = await getOrCreateAgentFolder(agentId)
+    const result = await drive.files.list({
+      q: `'${agentFolderId}' in parents and trashed=false`,
+      fields: 'files(id, name, createdTime, mimeType)',
+      orderBy: 'createdTime desc',
+      pageSize: 10
+    })
+
+    const files = result.data.files
+    if (!files.length) return res.status(404).json({ error: 'No recordings found' })
+
+    const fileList = await Promise.all(files.map(async (f) => {
+      try {
+        await drive.permissions.create({
+          fileId: f.id,
+          requestBody: { role: 'reader', type: 'anyone' }
+        })
+      } catch(e) {}
+      return {
+        id: f.id,
+        name: f.name,
+        createdTime: f.createdTime,
+        mimeType: f.mimeType,
+        downloadUrl: `https://drive.google.com/uc?export=download&id=${f.id}`
+      }
+    }))
+
+    res.json(fileList)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`CallBridge server running on port ${PORT}`)
 })
